@@ -1,0 +1,17 @@
+
+
+let $a = false, $b = true;
+
+let $x = lambda $a using $b do: $a + 2 end;
+
+foreach $x : $list, $y : $other_list do:
+    if $x:
+        $a
+    else:
+        $b (c + d) (a + a + b * c)
+    end
+end
+
+cond:
+    if (`lt?` a b) do : (`current-value` $x)
+end

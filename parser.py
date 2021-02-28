@@ -206,13 +206,13 @@ def parse_condition(it):
         cond = parse_complex_expression(it)
         expect_exact(it, Atom("do"))
         expect_exact(it, Symbol(':'))
-        then = parse_complex_expression(it)
+        then = parse_block_or_simple(it)
         cases.append((cond, then))
     if it.lookahead() == Atom("otherwise"):
         it.next()
         expect_exact(it, Symbol(':'))
         then = parse_complex_expression(it)
-        cases.append((airast.JsonValue(True), then))
+        cases.append((airast.ValueNode(True, airast.BooleanType()), then))
     expect_exact(it, Atom("end"))
     return airast.CaseExpression(cases)
 
@@ -395,15 +395,16 @@ def parse_operator_expression(it, first):
     return operand_stack[0]
 
 
-def parse_simple_value(atom):
+def parse_simple_value(it):
+    atom = it.next()
     if isinstance(atom, StringValue):
-        return airast.JsonValue(atom.value)
+        return airast.ValueNode(atom.value, airast.StringType())
     elif isinstance(atom, NumericValue):
-        return airast.JsonValue(atom.value)
+        return airast.ValueNode(atom.value, airast.DoubleType())
     elif atom == Atom("true"):
-        return airast.JsonValue(True)
+        return airast.ValueNode(True, airast.BooleanType())
     elif atom == Atom("false"):
-        return airast.JsonValue(False)
+        return airast.ValueNode(False, airast.BooleanType())
     elif isinstance(atom, Atom):
         if atom.name[0] == "$":
             return airast.VariableReference(atom.name[1:])
@@ -412,16 +413,22 @@ def parse_simple_value(atom):
 
 
 def parse_simple_expression(it):
-    atom = it.next()
+    atom = it.lookahead()
     if atom == Symbol("("):
+        it.next()
         expr = parse_complex_expression(it)
         expect_exact(it, Symbol(")"))
         return expr
     elif atom == Operator('-'):
+        it.next()
         expr = parse_simple_expression(it)
         return airast.UnaryExpression(airast.UnaryOperator.NEG, expr)
+    elif atom == Symbol('['):
+        return parse_array_expression(it)
+    elif atom == Symbol('{'):
+        return parse_record_expression(it)
     else:
-        return parse_simple_value(atom)
+        return parse_simple_value(it)
 
 
 def parse_composed_expression(it):

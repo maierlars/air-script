@@ -1,17 +1,8 @@
 
-
-let $a = false, $b = true;
-
-let $x = lambda $a using $b do: $a + 2 end;
-
-foreach $x : $list, $y : $other_list do:
-    if $x:
-        $a
-    else:
-        $b (c + d) (a + a + b * c)
-    end
-end
-
 cond:
-    if (`lt?` a b) do : (`current-value` $x)
+    if  (a b)  <= b - c do:
+        begin
+            {a : {key: int} = 2, b = 3}
+        end
+    if  (a b)  <= b - c do: [1, 2, 3, 4]
 end

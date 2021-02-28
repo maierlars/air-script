@@ -412,6 +412,103 @@ def parse_simple_value(it):
             return airast.Identifier(atom.name)
 
 
+def parse_array_expression(it):
+    expect_exact(it, Symbol('['))
+    entries = list()
+
+    while True:
+        value = parse_simple_expression(it)
+        entries.append(value)
+        next_token = it.lookahead()
+        if next_token == Symbol(']'):
+            it.next()
+            break
+
+        expect_exact(it, Symbol(','))
+
+    return airast.ArrayConstructor(entries)
+
+
+def parse_type_expression(it):
+    atom = it.next()
+    if atom == Atom("int"):
+        return airast.IntegerType()
+    elif atom == Atom("double"):
+        return airast.DoubleType()
+    elif atom == Atom("string"):
+        return airast.StringType()
+    elif atom == Atom("null"):
+        return airast.NullType()
+    elif atom == Atom("bool") or atom == Atom("boolean"):
+        return airast.BooleanType()
+    elif atom == Atom("any"):
+        return airast.AnyType()
+    elif atom == Atom("list"):
+        base_type = airast.AnyType()
+        if it.lookahead() == Symbol('('):
+            it.next()
+            base_type = parse_type_expression(it)
+            expect_exact(it, Symbol(')'))
+        return airast.ListType(base_type)
+    elif atom == Atom("dict"):
+        base_type = airast.AnyType()
+        if it.lookahead() == Symbol('('):
+            it.next()
+            base_type = parse_type_expression(it)
+            expect_exact(it, Symbol(')'))
+        return airast.DictType(base_type)
+    elif atom == Symbol('{'):
+        pairs = dict()
+
+        while it.lookahead() != '}':
+            identi = parse_simple_value(it)
+            if not isinstance(identi, airast.Identifier):
+                raise RuntimeError("Expected identifier, found {}".format(identi))
+            if identi.name in pairs:
+                raise ParserError("duplicate name in record `{}`".format(identi.name))
+            expect_exact(it, Symbol(':'))
+            base_type = parse_type_expression(it)
+            pairs[identi] = base_type
+
+            next_token = it.lookahead()
+            if next_token == Symbol('}'):
+                it.next()
+                break
+
+            expect_exact(it, Symbol(','))
+        return airast.RecordType(pairs)
+    else:
+        raise ParserError("Unrecognized type {}".format(atom))
+
+
+def parse_record_expression(it):
+    expect_exact(it, Symbol('{'))
+    entries = list()
+
+    while it.lookahead() != Symbol('}'):
+        name = parse_simple_value(it)
+
+        type_hint = None
+        next_token = it.lookahead()
+        if next_token == Symbol(':'):
+            it.next()
+            type_hint = parse_type_expression(it)
+
+        expect_exact(it, Symbol('='))
+        value = parse_complex_expression(it)
+
+        entries.append(airast.RecordKeyValuePair(name, value, type_hint))
+
+        next_token = it.lookahead()
+        if next_token == Symbol('}'):
+            it.next()
+            break
+
+        expect_exact(it, Symbol(','))
+
+    return airast.RecordConstructor(entries)
+
+
 def parse_simple_expression(it):
     atom = it.lookahead()
     if atom == Symbol("("):

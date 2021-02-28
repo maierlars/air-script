@@ -303,3 +303,28 @@ class LambdaExpression(AstNode):
     def airify(self):
         return ["lambda", ["quote", [x.name for x in self.captures]], ["quote", [x.name for x in self.params]],
                 ["quote", self.expr.airify()]]
+
+
+class ArrayConstructor(AstNode):
+    def __init__(self, entries):
+        super().__init__()
+        self.entries = entries
+
+    def airify(self):
+        return ["list", *[e.airify() for e in self.entries]]
+
+
+class RecordKeyValuePair:
+    def __init__(self, key, value, type_hint):
+        self.key = key
+        self.value = value
+        self.type_hint = type_hint
+
+
+class RecordConstructor(AstNode):
+    def __init__(self, entries):
+        super().__init__()
+        self.entries = entries
+
+    def airify(self):
+        return ["dict", *[[p.key.airify(), p.value.airify()] for p in self.entries]]

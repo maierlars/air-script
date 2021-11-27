@@ -2,6 +2,8 @@
 
 import json
 import sys
+
+import analyser
 import parser
 
 if __name__ == '__main__':
@@ -13,6 +15,8 @@ if __name__ == '__main__':
         source = f.read()
 
         ast = parser.parse(source)
+
+        analyser.analyse(ast)
 
         # add type checks and code analysis here
 
